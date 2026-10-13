@@ -20,7 +20,7 @@ Agent Incident Replay provides:
 > **Notice:** Agent Incident Replay provides tamper-evident local evidence: it detects modification or reordering of recorded events. It does not by itself prove authenticity, prevent deletion, or protect against an attacker who can rewrite the entire log and its anchor.
 
 ### Key Forensic Distinctions
-- **Tamper-Evident, Not Tamper-Proof**: A hash chain detects internal inconsistencies, broken links, payload edits, and reordering within an existing sequence of events. However, hash chaining cannot, by itself, prove authenticity, prevent deletion of log files, or guarantee detection if an adversary rewrites the entire log and anchor or silently truncates tail events without an external commitment.
+- **Tamper-Evident, Not Tamper-Proof**: A hash chain detects internal inconsistencies, broken links, payload edits, and event reordering within an existing sequence. However, hash chaining alone does not establish authenticity, prevent deletion, or guarantee detection of a rewritten chain or truncated final events without an independent checkpoint.
 - **Local vs. External Multi-Party Evidence**: An `EXECUTION_RESULT` status of `NOT_EXECUTED` indicates that the local agent controller suppressed execution. This status is designated as `NOT_INDEPENDENTLY_VERIFIED` unless corroborated by independent third-party evidence (such as payment gateway receipts, bank statements, or TLS packet captures).
 
 ## Architecture & Storage
@@ -43,7 +43,7 @@ To prevent accidental evidence loss, existing sessions are **never silently over
 
 ### Event Structure
 
-*(Illustrative schema example; hashes and payload fields below demonstrate structure. In real sessions, hashes are deterministically computed by the recorder from canonical field contents and placeholder digests are not cryptographically valid.)*
+*(Illustrative schema example only. The values for `prev_hash` and `hash` below are schematic placeholders and do not represent valid computed hashes. In real recorded sessions, 64-character hexadecimal SHA-256 digests are deterministically computed from canonical event fields.)*
 
 ```json
 {
@@ -52,11 +52,11 @@ To prevent accidental evidence loss, existing sessions are **never silently over
     "decision": "BLOCK",
     "reason": "Requested refund exceeds automatic approval limit"
   },
-  "prev_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "prev_hash": "<PREVIOUS_EVENT_SHA256_HASH_PLACEHOLDER>",
   "sequence": 2,
   "session_id": "run_001",
   "timestamp": "2026-10-14T02:20:00Z",
-  "hash": "8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4"
+  "hash": "<CURRENT_EVENT_SHA256_HASH_PLACEHOLDER>"
 }
 ```
 - **Sequence**: 1-based strictly increasing sequence counter.
