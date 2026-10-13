@@ -1,0 +1,37 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Unit test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local data / environments
+.venv/
+env/
+venv/
+.env
+
+# Local session logs and generated forensic reports
+.agent-incident-replay/
+*.jsonl
+sessions/
+reports/
+
+# Backups and temporary files
+*backup*
+*.bak
+*.tmp
+
+# IDE and OS artifacts
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
