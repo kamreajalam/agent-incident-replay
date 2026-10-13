@@ -10,7 +10,7 @@ Agent Incident Replay provides:
 - **Zero Runtime Dependencies**: Built entirely on the Python standard library.
 - **JSONL Persistence**: Linear, inspectable append-only event streams.
 - **Cryptographic Hash Chaining**: Deterministic SHA-256 chaining across all canonical event data.
-- **Deterministic Integrity Verification**: Pinpoints the exact event sequence where any modification or reordering occurred.
+- **Deterministic Integrity Verification**: Detects event modifications, sequence gaps, and reordering within recorded sessions.
 - **Read-Only Incident Replay**: Chronological step-by-step playback without side-effects.
 - **Forensic Markdown Reporting**: Comprehensive audit summaries covering timeline, policy evaluations, execution results, missing multi-party evidence, and limitations.
 - **CLI & Python API**: Unified command-line interface and modular Python SDK.
@@ -20,7 +20,7 @@ Agent Incident Replay provides:
 > **Notice:** Agent Incident Replay provides tamper-evident local evidence: it detects modification or reordering of recorded events. It does not by itself prove authenticity, prevent deletion, or protect against an attacker who can rewrite the entire log and its anchor.
 
 ### Key Forensic Distinctions
-- **Tamper-Evident, Not Tamper-Proof**: Modifying, deleting, inserting, or reordering any event invalidates the SHA-256 cryptographic hash chain and is immediately flagged by the verifier. However, a local adversary with full filesystem write privileges could generate a completely fresh forged chain unless the head hash is anchored externally.
+- **Tamper-Evident, Not Tamper-Proof**: A hash chain detects internal inconsistencies, broken links, payload edits, and reordering within an existing sequence of events. However, hash chaining cannot, by itself, prove authenticity, prevent deletion of log files, or guarantee detection if an adversary rewrites the entire log and anchor or silently truncates tail events without an external commitment.
 - **Local vs. External Multi-Party Evidence**: An `EXECUTION_RESULT` status of `NOT_EXECUTED` indicates that the local agent controller suppressed execution. This status is designated as `NOT_INDEPENDENTLY_VERIFIED` unless corroborated by independent third-party evidence (such as payment gateway receipts, bank statements, or TLS packet captures).
 
 ## Architecture & Storage
@@ -42,7 +42,9 @@ Storage directory configuration:
 To prevent accidental evidence loss, existing sessions are **never silently overwritten**. Attempting to record to an existing session without explicit overwrite authorization raises `SessionAlreadyExistsError`.
 
 ### Event Structure
-Each event contains:
+
+*(Illustrative schema example; hashes and payload fields below demonstrate structure. In real sessions, hashes are deterministically computed by the recorder from canonical field contents and placeholder digests are not cryptographically valid.)*
+
 ```json
 {
   "event_type": "POLICY_DECISION",
@@ -64,7 +66,7 @@ Each event contains:
 
 ## Installation
 
-Install in editable mode with development dependencies:
+Requires Python 3.10+. Install in editable mode with development dependencies:
 
 ```bash
 python -m pip install -e ".[dev]"
@@ -72,7 +74,7 @@ python -m pip install -e ".[dev]"
 
 ## Quick Start & Demo
 
-Run the included AI refund agent scenario:
+Run the included AI refund agent scenario ([demo.py](demo.py)):
 
 ```bash
 python demo.py
@@ -120,6 +122,8 @@ The report is saved to `~/.agent-incident-replay/reports/run_001.md`. Report gen
 
 ## Python API Example
 
+For a complete runnable script, see [examples/refund_agent_demo.py](examples/refund_agent_demo.py).
+
 ```python
 from agent_incident_replay import (
     SessionRecorder,
@@ -128,8 +132,8 @@ from agent_incident_replay import (
     IncidentReporter,
 )
 
-# 1. Record events
-recorder = SessionRecorder(session_id="run_002")
+# 1. Record events (use allow_overwrite=True for repeatable scripts/notebooks)
+recorder = SessionRecorder(session_id="run_002", allow_overwrite=True)
 recorder.record_action_proposed(
     action="issue_refund",
     parameters={"amount": 5000, "currency": "INR"}
@@ -149,7 +153,11 @@ verifier = IncidentVerifier()
 result = verifier.verify_session("run_002")
 assert result.is_valid is True
 
-# 3. Generate report
+# 3. Read-only replay playback
+replayer = IncidentReplayer()
+playback_lines = replayer.replay("run_002")
+
+# 4. Generate report
 reporter = IncidentReporter()
 report_path = reporter.generate_report("run_002")
 print(f"Report saved to: {report_path}")
@@ -165,4 +173,4 @@ python -m pytest -q
 
 ## License
 
-MIT
+Distributed under the terms of the [MIT License](LICENSE).
